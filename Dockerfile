@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.9-slim
+FROM python:alpine
 
 # Set working directory in the container
 WORKDIR /app
@@ -22,8 +22,7 @@ COPY . .
 # Create directories for models, images, and videos if they don't exist
 RUN mkdir -p models images videos
 
-# Download YOLOv8 model if not present
-RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt')"
+
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
