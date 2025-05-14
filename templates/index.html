@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VIOR - Video and Image Object Recognition</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6247aa;
+            --secondary: #815ac0;
+            --background: #1a1a2e;
+            --surface: #2d2b55;
+            --surface-light: #3c3a64;
+            --text: #e4e4ff;
+            --accent: #b8c0ff;
+            --gradient-start: #6247aa;
+            --gradient-end: #a682ff;
+            --error: #ff5757;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--background), #1a1a2e);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            perspective: 1000px;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 2rem;
+            font-size: 2.5em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            bottom: -8px;
+            left: 0;
+            background: linear-gradient(90deg, var(--accent), var(--primary), var(--secondary));
+            animation: gradient-shift 3s linear infinite;
+            background-size: 200% 100%;
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .card {
+            background: rgba(26, 35, 126, 0.7);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(67, 97, 238, 0.3);
+        }
+
+        .preview-section {
+            position: relative;
+            min-height: 500px;
+            padding: 2rem;
+        }
+
+        .preview-content {
+            width: 100%;
+            height: 380px;
+            background: var(--surface);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            position: relative;
+            border: 2px dashed rgba(230, 230, 255, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .preview-content.has-file {
+            border-color: transparent;
+            background: transparent;
+        }
+
+        .preview-content.has-file::before {
+            display: none;
+        }
+
+        .preview-content img,
+        .preview-content video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 0.75rem;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .preview-content::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(98, 71, 170, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .preview-content:hover::after {
+            opacity: 1;
+        }
+
+        .preview-content.drag-over {
+            border-color: var(--accent);
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(184, 192, 255, 0.2);
+        }
+
+        .tab-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--text);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            z-index: -1;
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.3s ease;
+        }
+
+        .tab-button:hover::before,
+        .tab-button.active::before {
+            transform: scaleX(1);
+            transform-origin: left;
+        }
+
+        .file-upload {
+            position: relative;
+            width: 100%;
+            height: 3.5rem;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .file-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .file-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .file-label i {
+            margin-right: 8px;
+        }
+
+        .process-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--surface-light);
+            color: var(--text);
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .process-button:not(:disabled)::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { transform: translateX(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) rotate(45deg); }
+        }
+
+        .process-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--accent);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            max-height: 600px;
+        }
+
+        .results-section h3 {
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        #results {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) var(--surface);
+        }
+
+        #results::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #results::-webkit-scrollbar-track {
+            background: var(--surface);
+            border-radius: 4px;
+        }
+
+        #results::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        #results::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+
+        .object-group {
+            background: rgba(67, 97, 238, 0.1);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(67, 97, 238, 0.2);
+        }
+
+        .object-group:hover {
+            transform: translateX(5px);
+            background: rgba(67, 97, 238, 0.15);
+        }
+
+        .object-instance {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.2s ease;
+        }
+
+        .object-instance:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(3px);
+        }
+
+        .confidence {
+            color: var(--accent);
+            font-weight: 500;
+            padding: 0.25rem 0.75rem;
+            background: rgba(0, 188, 212, 0.1);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .confidence i {
+            font-size: 0.8rem;
+        }
+
+        .preview-placeholder {
+            color: var(--accent);
+            font-size: 1.1rem;
+            text-align: center;
+            opacity: 0.7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .preview-content:hover .preview-placeholder {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+
+        .preview-placeholder i {
+            font-size: 2.5rem;
+            animation: bounce 2s infinite;
+        }
+
+        .preview-placeholder .upload-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .preview-placeholder .upload-hint {
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .status-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            background: var(--accent);
+            color: var(--text);
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-message.show {
+            transform: translateX(0);
+        }
+
+        @keyframes progress {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+
+        .upload-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: var(--accent);
+            width: 0;
+        }
+
+        .upload-progress.active {
+            animation: progress 2s linear;
+        }
+
+        .upload-controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .process-button,
+        .clear-button {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .process-button {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: var(--text);
+        }
+
+        .clear-button {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid rgba(230, 230, 255, 0.1);
+        }
+
+        .process-button:hover:not(:disabled),
+        .clear-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .clear-button:hover {
+            background: var(--surface);
+            border-color: var(--accent);
+        }
+
+        .preview-placeholder .file-types {
+            font-size: 0.9rem;
+            color: rgba(230, 230, 255, 0.5);
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .error-message.show {
+            opacity: 1;
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(12px);
+        }
+
+        .loader-content {
+            text-align: center;
+            color: var(--text);
+            position: relative;
+        }
+
+        .vior-loader {
+            width: 240px;
+            height: 240px;
+            position: relative;
+            margin-bottom: 20px;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-10px) rotate(5deg); }
+            75% { transform: translateY(10px) rotate(-5deg); }
+        }
+
+        .vior-loader .circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
+            border-radius: 50%;
+            animation: rotate 4s linear infinite;
+        }
+
+        .vior-loader .circle::before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: currentColor;
+            border-radius: 50%;
+            transform: translateX(-50%);
+            filter: blur(2px);
+        }
+
+        .vior-loader .circle:nth-child(1) {
+            border-top: 4px solid var(--primary);
+            color: var(--primary);
+            animation-duration: 4s;
+        }
+
+        .vior-loader .circle:nth-child(2) {
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+            border-right: 4px solid var(--secondary);
+            color: var(--secondary);
+            animation-duration: 3s;
+            animation-direction: reverse;
+        }
+
+        .vior-loader .circle:nth-child(3) {
+            width: 60%;
+            height: 60%;
+            top: 20%;
+            left: 20%;
+            border-bottom: 4px solid var(--accent);
+            color: var(--accent);
+            animation-duration: 2s;
+        }
+
+        .vior-loader .core {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40%;
+            height: 40%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 30px rgba(98, 71, 170, 0.5);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .vior-loader .spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: spark 2s linear infinite;
+        }
+
+        .vior-loader .spark:nth-child(1) { animation-delay: 0s; }
+        .vior-loader .spark:nth-child(2) { animation-delay: 0.4s; }
+        .vior-loader .spark:nth-child(3) { animation-delay: 0.8s; }
+        .vior-loader .spark:nth-child(4) { animation-delay: 1.2s; }
+        .vior-loader .spark:nth-child(5) { animation-delay: 1.6s; }
+
+        @keyframes spark {
+            0% {
+                transform: translate(120px, 120px) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(60px, 60px) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(0, 0) scale(0);
+                opacity: 0;
+            }
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .loader-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .loader-particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: particle-float 4s linear infinite;
+        }
+
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100%) rotate(0deg);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100%) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .loader-text {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: text-shine 2s linear infinite;
+            position: relative;
+        }
+
+        @keyframes text-shine {
+            0% { background-position: -100% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .disclaimer-wrapper {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 0.5rem 2rem;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+        }
+
+        .disclaimer {
+            background: rgba(255, 193, 7, 0.05);
+            border: 1px solid rgba(255, 193, 7, 0.15);
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            margin: 0 auto;
+            max-width: 1400px;
+            color: var(--text);
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            overflow: hidden;
+        }
+
+        .disclaimer i {
+            color: #ffc107;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .disclaimer-content {
+            display: flex;
+            gap: 2rem;
+            white-space: nowrap;
+            will-change: transform;
+        }
+
+        .disclaimer-text {
+            flex-shrink: 0;
+            animation: scrollText 20s linear infinite;
+            padding-right: 2rem;
+        }
+
+        @keyframes scrollText {
+            0% { transform: translate(100%); }
+            100% { transform: translate(-100%); }
+        }
+    </style>
+</head>
+<body>
+    <h1>VIOR - Video and Image Object Recognition</h1>
+    
+    <div class="container">
+        <div class="preview-section card">
+            <div class="tab-controls">
+                <button class="tab-button active" onclick="switchTab('image')">
+                    <i class="fas fa-image"></i> Image
+                </button>
+                <button class="tab-button" onclick="switchTab('video')">
+                    <i class="fas fa-video"></i> Video
+                </button>
+            </div>
+
+            <div class="preview-content" id="previewContainer">
+                <div class="preview-placeholder" id="previewPlaceholder">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <div class="upload-text">
+                        Drag & drop or click to upload
+                    </div>
+                    <div class="file-types" id="fileTypes">
+                        Supported formats: JPG, JPEG, PNG, WebP
+                    </div>
+                </div>
+                <div id="preview"></div>
+            </div>
+
+            <div class="error-message" id="errorMessage">
+                <i class="fas fa-exclamation-circle"></i>
+                <span></span>
+            </div>
+
+            <div class="upload-controls">
+                <div class="button-group">
+                    <button onclick="processFile()" class="process-button" id="processButton" disabled>
+                        <i class="fas fa-magic"></i> Process
+                    </button>
+                    <button onclick="clearUpload()" class="clear-button" id="clearButton" disabled>
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section card">
+            <h3><i class="fas fa-chart-bar"></i> Detection Results</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <div class="disclaimer-wrapper">
+        <div class="disclaimer">
+            <div class="disclaimer-content">
+                <div class="disclaimer-text">
+                    ⚠️ Accuracy Notice: Results vary with image/video quality • May detect false positives or miss objects • Results are assistive, not definitive • Best with good lighting and clear visibility
+                </div>
+                <div class="disclaimer-text">
+                    ⚠️ Accuracy Notice: Results vary with image/video quality • May detect false positives or miss objects • Results are assistive, not definitive • Best with good lighting and clear visibility
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-message" id="statusMessage"></div>
+
+    <div class="loader-overlay" id="processingLoader">
+        <div class="loader-content">
+            <div class="vior-loader">
+                <div class="circle"></div>
+                <div class="circle"></div>
+                <div class="circle"></div>
+                <div class="spark"></div>
+                <div class="spark"></div>
+                <div class="spark"></div>
+                <div class="spark"></div>
+                <div class="spark"></div>
+                <div class="core">VIOR</div>
+            </div>
+            <div class="loader-particles">
+                <div class="loader-particle" style="left: 10%; animation-delay: 0s;"></div>
+                <div class="loader-particle" style="left: 30%; animation-delay: 1s;"></div>
+                <div class="loader-particle" style="left: 50%; animation-delay: 2s;"></div>
+                <div class="loader-particle" style="left: 70%; animation-delay: 1.5s;"></div>
+                <div class="loader-particle" style="left: 90%; animation-delay: 0.5s;"></div>
+            </div>
+            <div class="loader-text">Processing...</div>
+        </div>
+    </div>
+
+    <script>
+        const config = {
+            currentTab: 'image',
+            isProcessing: false,
+            currentFile: null,
+            supportedTypes: {
+                image: {
+                    accept: '.jpg,.jpeg,.png,.webp',
+                    mimes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+                    text: 'Supported formats: JPG, JPEG, PNG, WebP'
+                },
+                video: {
+                    accept: '.mp4,.avi,.mov,.mkv',
+                    mimes: ['video/mp4', 'video/avi', 'video/quicktime', 'video/x-matroska'],
+                    text: 'Supported formats: MP4, AVI, MOV, MKV'
+                }
+            }
+        };
+
+        function initializeUI() {
+            setupDragAndDrop();
+            updateUI();
+        }
+
+        function updateUI() {
+            const fileTypes = document.getElementById('fileTypes');
+            fileTypes.textContent = config.supportedTypes[config.currentTab].text;
+
+            const processButton = document.getElementById('processButton');
+            const clearButton = document.getElementById('clearButton');
+            processButton.disabled = !config.currentFile;
+            clearButton.disabled = !config.currentFile;
+
+            const previewPlaceholder = document.getElementById('previewPlaceholder');
+            const preview = document.getElementById('preview');
+            
+            if (config.currentFile) {
+                previewPlaceholder.style.display = 'none';
+                preview.style.display = 'block';
+            } else {
+                previewPlaceholder.style.display = 'flex';
+                preview.style.display = 'none';
+            }
+        }
+
+        function showMessage(message, type = 'success') {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            statusMessage.style.background = type === 'success' ? '#4caf50' : '#f44336';
+            statusMessage.classList.add('show');
+
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.querySelector('span').textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        function clearUpload() {
+            if (config.isProcessing) return;
+
+            const preview = document.getElementById('preview');
+            const previewContainer = document.getElementById('previewContainer');
+            
+            preview.innerHTML = '';
+            // Remove has-file class to show the dotted border
+            previewContainer.classList.remove('has-file');
+            
+            config.currentFile = null;
+            updateUI();
+            
+            // Clear detection results
+            document.getElementById('results').innerHTML = '';
+            
+            showMessage('Upload cleared');
+        }
+
+        function switchTab(tab) {
+            if (config.currentTab === tab || config.isProcessing) return;
+            
+            config.currentTab = tab;
+            const buttons = document.querySelectorAll('.tab-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.tab-button').classList.add('active');
+
+            clearUpload();
+        }
+
+        function validateFile(file) {
+            if (!file) return false;
+
+            const validTypes = config.supportedTypes[config.currentTab].mimes;
+            if (!validTypes.includes(file.type)) {
+                showError(`Please upload a supported ${config.currentTab} format (${config.supportedTypes[config.currentTab].text})`);
+                return false;
+            }
+            return true;
+        }
+
+        function handleDrop(e) {
+            if (config.isProcessing) return;
+            
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            
+            if (file && validateFile(file)) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!validateFile(file)) return;
+
+            const reader = new FileReader();
+            const preview = document.getElementById('preview');
+            const previewContainer = document.getElementById('previewContainer');
+
+            reader.onload = function(e) {
+                const element = config.currentTab === 'image' 
+                    ? document.createElement('img')
+                    : document.createElement('video');
+                
+                element.style.opacity = '0';
+                element.src = e.target.result;
+                if (config.currentTab === 'video') {
+                    element.controls = true;
+                }
+                
+                preview.innerHTML = '';
+                preview.appendChild(element);
+                
+                // Add has-file class to hide the dotted border
+                previewContainer.classList.add('has-file');
+                
+                setTimeout(() => {
+                    element.style.opacity = '1';
+                }, 50);
+
+                config.currentFile = file;
+                updateUI();
+                showMessage('File uploaded successfully');
+            }
+
+            reader.onerror = function() {
+                showError('Error reading file');
+                clearUpload();
+            }
+
+            reader.readAsDataURL(file);
+        }
+
+        function setupDragAndDrop() {
+            const previewContainer = document.getElementById('previewContainer');
+            
+            previewContainer.addEventListener('dragenter', preventDefault);
+            previewContainer.addEventListener('dragover', preventDefault);
+            previewContainer.addEventListener('dragleave', preventDefault);
+            previewContainer.addEventListener('drop', preventDefault);
+            
+            previewContainer.addEventListener('dragenter', highlight);
+            previewContainer.addEventListener('dragover', highlight);
+            previewContainer.addEventListener('dragleave', unhighlight);
+            previewContainer.addEventListener('drop', unhighlight);
+            
+            previewContainer.addEventListener('drop', handleDrop);
+            previewContainer.addEventListener('click', handleClick);
+        }
+
+        function handleClick(e) {
+            if (config.isProcessing) return;
+            
+            // Don't trigger file input if clicking on video controls or preview content
+            if (e.target.tagName === 'VIDEO' || e.target.tagName === 'IMG') return;
+            
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = config.supportedTypes[config.currentTab].accept;
+            
+            input.onchange = function(e) {
+                if (e.target.files[0]) {
+                    handleFile(e.target.files[0]);
+                }
+            };
+            
+            input.click();
+        }
+
+        function preventDefault(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight(e) {
+            if (!config.isProcessing) {
+                document.getElementById('previewContainer').classList.add('drag-over');
+            }
+        }
+
+        function unhighlight(e) {
+            document.getElementById('previewContainer').classList.remove('drag-over');
+        }
+
+        async function processFile() {
+            if (!config.currentFile || config.isProcessing) return;
+
+            const processButton = document.getElementById('processButton');
+            const clearButton = document.getElementById('clearButton');
+            const processingLoader = document.getElementById('processingLoader');
+            
+            config.isProcessing = true;
+            processButton.disabled = true;
+            clearButton.disabled = true;
+            
+            // Show the processing loader
+            processingLoader.style.display = 'flex';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', config.currentFile);
+
+                const endpoint = config.currentTab === 'image' ? '/vior-image' : '/vior-video';
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (!data || !data.detections) {
+                    throw new Error('Invalid response format');
+                }
+
+                displayResults(data.detections);
+                showMessage('Processing completed successfully');
+            } catch (error) {
+                console.error('Error:', error);
+                showError(error.message);
+                document.getElementById('results').innerHTML = `
+                    <div class="object-group" style="background: rgba(244, 67, 54, 0.1); border-color: rgba(244, 67, 54, 0.3);">
+                        <div class="object-instance" style="color: #f44336;">
+                            <i class="fas fa-exclamation-circle"></i>
+                            ${error.message}
+                        </div>
+                    </div>
+                `;
+            } finally {
+                config.isProcessing = false;
+                processButton.disabled = false;
+                clearButton.disabled = false;
+                updateUI();
+                
+                // Hide the processing loader
+                processingLoader.style.display = 'none';
+            }
+        }
+
+        function displayResults(detections) {
+            const resultsDiv = document.getElementById('results');
+            let html = '';
+
+            if (!detections || Object.keys(detections).length === 0) {
+                html = `
+                    <div class="object-group">
+                        <div class="object-instance">
+                            <i class="fas fa-info-circle"></i>
+                            No objects detected
+                        </div>
+                    </div>
+                `;
+            } else {
+                for (const [objectType, instances] of Object.entries(detections)) {
+                    html += `
+                        <div class="object-group">
+                            <h4><i class="fas fa-tag"></i> ${objectType}</h4>
+                    `;
+
+                    instances.forEach(instance => {
+                        html += `
+                            <div class="object-instance">
+                                <span><i class="fas fa-map-marker-alt"></i> ${instance.object_id}: ${instance.position}</span>
+                                <span class="confidence">
+                                    <i class="fas fa-chart-line"></i>
+                                    ${(instance.confidence * 100).toFixed(1)}%
+                                </span>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                }
+            }
+
+            resultsDiv.innerHTML = html;
+            
+            // Add fade-in animation to new results
+            const groups = resultsDiv.querySelectorAll('.object-group');
+            groups.forEach((group, index) => {
+                group.style.opacity = '0';
+                group.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    group.style.opacity = '1';
+                    group.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        // Initialize the UI when the page loads
+        initializeUI();
+
+        // Remove the delayed disclaimer show since we want it visible immediately
+        // The animation will start as soon as the page loads because it's in the CSS
+
+    </script>
+</body>
+</html>
