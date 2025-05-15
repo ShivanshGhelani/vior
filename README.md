@@ -1,6 +1,6 @@
 # VIOR API - Video and Image Object Recognition
 
-> **Live Demo**: [examplelink.com](https://examplelink.com)
+> **Live Demo**: [examplelink.com](https://myra-vior.onrender.com)
 >
 > **Note**: The live demo uses a free tier hosting service which might not always produce optimal results due to resource limitations. For a guaranteed experience, please refer to the demo videos and screenshots in this README file.
 
@@ -29,7 +29,7 @@ Here are some screenshots of the application in action:
 
 Check out the demo video to see the application in action:
 
-[Watch Demo Video](static/screenshots/demo.mkv)
+[Watch Demo Video](https://youtu.be/RNzTktLaMnw)
 
 ## Prerequisites
 
